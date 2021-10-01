@@ -1,15 +1,65 @@
-// const fs = require('fs/promises')
-// const contacts = require('./contacts.json')
+const fs = require('fs/promises');
 
-const listContacts = async () => {}
+const path = require('path');
+const uniqid = require('uniqid');
 
-const getContactById = async (contactId) => {}
+const contactsPath = path.join(__dirname, './contacts.json');
 
-const removeContact = async (contactId) => {}
+const listContacts = async () => {
+  const contacts = await fs.readFile(contactsPath, 'utf-8');
+  return JSON.parse(contacts);
+};
 
-const addContact = async (body) => {}
+const getContactById = async contactId => {
+  const contacts = await listContacts();
 
-const updateContact = async (contactId, body) => {}
+  const contactById = contacts.find(contact => contact.id === contactId);
+  if (!contactById) {
+    return null;
+  }
+  return contactById;
+};
+
+const removeContact = async contactId => {
+  const contacts = await listContacts();
+
+  const contactById = contacts.find(contact => contact.id === contactId);
+  if (!contactById) {
+    return null;
+  }
+
+  const newContacts = contacts.filter(contact => contact.id !== contactId);
+  await fs.writeFile(contactsPath, JSON.stringify(newContacts));
+  return newContacts;
+};
+
+const addContact = async body => {
+  const contacts = await listContacts();
+  const { name, email, phone } = body;
+  const newContact = {
+    name,
+    email,
+    phone,
+    id: uniqid(),
+  };
+  contacts.push(newContact);
+  await fs.writeFile(contactsPath, JSON.stringify(contacts));
+  return await contacts;
+};
+
+const updateContact = async (contactId, body) => {
+  const contacts = await listContacts();
+
+  const idx = contacts.findIndex(item => item.id === contactId);
+  console.log(idx);
+  if (idx === -1) {
+    return null;
+  }
+  const updateContact = { ...contacts[idx], ...body };
+  contacts[idx] = updateContact;
+  await fs.writeFile(contactsPath, JSON.stringify(contacts));
+  return updateContact;
+};
 
 module.exports = {
   listContacts,
@@ -17,4 +67,4 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
-}
+};
