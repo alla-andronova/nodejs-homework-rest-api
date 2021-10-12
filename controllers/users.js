@@ -50,10 +50,6 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) {
       throw new NotFound(`email ${email} not found`);
-      // res.status(404).json({
-      //   status: 'error',
-      //   message: `email ${email} not found`,
-      // });
     }
     if (!bcrypt.compareSync(password, user.password)) {
       throw new BadRequest('failed');
@@ -62,12 +58,12 @@ const login = async (req, res, next) => {
     next(error);
   }
 };
-const logout = async (req, res, next) => {
-  try {
-  } catch (error) {
-    next(error);
-  }
-};
+// const logout = async (req, res, next) => {
+//   try {
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 module.exports = {
   signup,
