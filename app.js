@@ -14,11 +14,13 @@ app.use(cors());
 // тело запроса переводит из строки в обьект
 app.use(express.json());
 
+app.use(express.static('public'));
+
 app.use('/api/contacts', contactsRouter);
 app.use('/api/users', authRouter);
 
 app.use((req, res) => {
-  res.status(404).json({ message: 'Not found' });
+  res.status(404).json({ message: 'Not foun???d' });
 });
 
 app.use((err, req, res, next) => {

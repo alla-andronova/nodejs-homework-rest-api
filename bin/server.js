@@ -5,10 +5,7 @@ dotenv.config();
 const { DB_HOST, PORT = 3000 } = process.env;
 
 mongoose
-  .connect(DB_HOST, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(DB_HOST)
   .then(() => {
     console.log('success');
     app.listen(PORT, () => {
