@@ -6,8 +6,6 @@ const uploadMiddleware = require('../../middleware/upload');
 const { users: controller } = require('../../controllers');
 module.exports = router;
 
-// router.post('/signup', uploadMiddleware.single('avatarURL'), controller.signup);
-
 router.post('/signup', controller.signup);
 router.post('/login', controller.login);
 router.patch(

@@ -64,7 +64,7 @@ const updateAvatar = async (req, res, next) => {
     Jimp.read(tempStorage, (err, image) => {
       if (err) throw err;
       image
-        .resize(256, 256) // resize
+        .resize(250, 250) // resize
         .write(newFileName); // save
     });
 
