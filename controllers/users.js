@@ -1,14 +1,17 @@
 const bcrypt = require('bcryptjs');
+const uniqid = require('uniqid');
 const Jimp = require('jimp');
 const gravatar = require('gravatar');
 const path = require('path');
 const fs = require('fs/promises');
+const jwt = require('jsonwebtoken');
 const { Conflict, NotFound, BadRequest } = require('http-errors');
 const dotenv = require('dotenv');
 dotenv.config();
 const { User } = require('../models');
 const { userSchema } = require('../schemas');
-const jwt = require('jsonwebtoken');
+const mailer = require('../nodemailer');
+
 const { SECRET_KEY } = process.env;
 
 const usersDir = path.join(__dirname, '../', 'public/avatars');
@@ -25,16 +28,28 @@ const signup = async (req, res, next) => {
     const { email, password } = req.body;
     const hashPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
     const userAva = gravatar.url(email, { s: '200', r: 'pg', d: 'retro' });
+    const verifyToken = uniqid();
+
     const newUser = {
       email,
       password: hashPassword,
       avatarURL: userAva,
+      verifyToken,
     };
     const user = await User.findOne({ email });
     if (user) {
       throw new Conflict('already exist');
     }
     await User.create(newUser);
+
+    const sendEmail = {
+      to: email,
+      from: 'allaitcreative@gmail.com',
+      subject: 'verification',
+      html: `<p>please follow link below </p>
+            <a href="http://localhost:3000/api/users/verify/${verifyToken}" target="_blank" >click here</a>`,
+    };
+    await mailer(sendEmail);
 
     res.status(201).json({
       status: 'success',
@@ -105,8 +120,12 @@ const login = async (req, res, next) => {
     }
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+
     if (!user) {
       throw new NotFound(`email ${email} not found`);
+    }
+    if (!user.verify) {
+      throw new BadRequest('email not verify');
     }
     if (!bcrypt.compareSync(password, user.password)) {
       throw new BadRequest('failed');
@@ -147,6 +166,67 @@ const logout = async (req, res, next) => {
     next(error);
   }
 };
+const verification = async (req, res, next) => {
+  try {
+    const { verifyToken } = req.params;
+
+    const user = await User.findOne({ verifyToken });
+
+    if (!user) {
+      throw new NotFound(' verify error');
+    }
+    await User.findByIdAndUpdate(user.id, {
+      verifyToken: null,
+      verify: true,
+    });
+    res.json({
+      status: 'success',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const repeatVerify = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const { error } = userSchema.validate(req.body);
+
+    if (error) {
+      const err = new Error(error.message);
+      err.status = 400;
+      throw err;
+    }
+
+    if (!email) {
+      throw new BadRequest('missing required field email');
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new NotFound(' please signup');
+    }
+
+    if (user.verify) {
+      throw new BadRequest('Verification has already been passed"');
+    }
+    const sendEmail = {
+      to: email,
+      from: 'allaitcreative@gmail.com',
+      subject: 'verification',
+      html: `<p>please follow link below </p>
+            <a href="http://localhost:3000/api/users/verify/${user.verifyToken}" target="_blank" >click here</a>`,
+    };
+    await mailer(sendEmail);
+
+    res.json({
+      status: 'success',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const getUserData = async (req, res, next) => {
   try {
@@ -176,4 +256,6 @@ module.exports = {
   logout,
   getUserData,
   updateAvatar,
+  verification,
+  repeatVerify,
 };

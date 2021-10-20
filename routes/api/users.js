@@ -16,3 +16,5 @@ router.patch(
 );
 router.get('/logout', authMiddleware, controller.logout);
 router.get('/current', authMiddleware, controller.getUserData);
+router.get('/verify/:verifyToken', controller.verification);
+router.post('/verify', controller.repeatVerify);
